@@ -8,6 +8,7 @@ import { getExtensionVersion } from "../util/util";
 
 import { VsCodeContinueApi } from "./api";
 import { setupInlineTips } from "./inlineTips";
+import { inletActivate } from "../../../../inlet/activate";
 
 export async function activateExtension(context: vscode.ExtensionContext) {
   // Add necessary files
@@ -17,6 +18,8 @@ export async function activateExtension(context: vscode.ExtensionContext) {
   // Register commands and providers
   registerQuickFixProvider();
   setupInlineTips(context);
+
+  inletActivate(context);
 
   const vscodeExtension = new VsCodeExtension(context);
 

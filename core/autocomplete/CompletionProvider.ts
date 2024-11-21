@@ -21,7 +21,7 @@ import { AutocompleteLoggingService } from "./util/AutocompleteLoggingService.js
 import AutocompleteLruCache from "./util/AutocompleteLruCache.js";
 import { HelperVars } from "./util/HelperVars.js";
 import { AutocompleteInput, AutocompleteOutcome } from "./util/types.js";
-
+import { getVariableDataSnippets } from "../../inlet/VariableDataProvider";
 const autocompleteCache = AutocompleteLruCache.get();
 
 // Errors that can be expected on occasion even during normal functioning should not be shown.
@@ -175,6 +175,7 @@ export class CompletionProvider {
       // Some IDEs might have special ways of finding snippets (e.g. JetBrains and VS Code have different "LSP-equivalent" systems,
       // or they might separately track recently edited ranges)
       const extraSnippets = await this._getExtraSnippets(helper);
+      const variableDataSnippets = await getVariableDataSnippets(input, this.ide);
 
       let snippets = await constructAutocompletePrompt(
         helper,

@@ -6,6 +6,7 @@ module.exports = {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "./src/*.{js,ts,jsx,tsx}",
+    "!./src/inlet/**/*",  // otherwise match node_modules
   ],
   theme: {
     // Note that these breakpoints are primarily optimized for the input toolbar

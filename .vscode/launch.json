@@ -5,6 +5,7 @@
   "version": "0.2.0",
   "compounds": [],
   "configurations": [
+    
     {
       "name": "Launch extension",
       "type": "extensionHost",
@@ -26,6 +27,49 @@
         // "CONTROL_PLANE_ENV": "staging"
       }
     },
+    {
+      "name": "Launch smartwyre extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/extensions/vscode",
+      "args": [
+        // Pass a directory to manually test in
+        "/Users/miller/projects/clickmate/testimpls/smartwyre",
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/vscode"
+      ],
+      "pauseForSourceMap": false,
+      "outFiles": ["${workspaceFolder}/extensions/vscode/out/extension.js"],
+      "preLaunchTask": "vscode-extension:build",
+      "env": {
+        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "staging" for the preview deployment	        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "local" for entirely local development of control plane/proxy
+        // "CONTROL_PLANE_ENV": "staging"
+      }
+    },
+    {
+      "name": "Launch swproto extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/extensions/vscode",
+      "args": [
+        // Pass a directory to manually test in
+        "/Users/miller/projects/swproto",
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/vscode"
+      ],
+      "pauseForSourceMap": false,
+      "outFiles": ["${workspaceFolder}/extensions/vscode/out/extension.js"],
+      "preLaunchTask": "vscode-extension:build",
+      "env": {
+        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "staging" for the preview deployment	        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "local" for entirely local development of control plane/proxy
+        // "CONTROL_PLANE_ENV": "staging"
+      }
+    },
+
+
+
     {
       "type": "node",
       "request": "launch",

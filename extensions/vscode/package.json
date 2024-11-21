@@ -2,7 +2,7 @@
   "name": "continue",
   "icon": "media/icon.png",
   "author": "Continue Dev, Inc",
-  "version": "0.9.228",
+  "version": "0.9.230",
   "repository": {
     "type": "git",
     "url": "https://github.com/continuedev/continue"
@@ -144,6 +144,18 @@
       }
     },
     "commands": [
+      {
+        "command": "inlet.runWorkflow",
+        "category": "Inlet",
+        "title": "Run Workflow",
+        "group": "Inlet"
+      },
+      {
+        "command": "inlet.runMapping",
+        "category": "Inlet",
+        "title": "Run Mapping",
+        "group": "Inlet"
+      },
       {
         "command": "continue.applyCodeFromChat",
         "category": "Continue",
@@ -320,13 +332,13 @@
     "keybindings": [
       {
         "command": "continue.focusContinueInput",
-        "mac": "cmd+l",
-        "key": "ctrl+l"
+        "mac": "cmd+h",
+        "key": "ctrl+h"
       },
       {
         "command": "continue.focusContinueInputWithoutClear",
-        "mac": "cmd+shift+l",
-        "key": "ctrl+shift+l"
+        "mac": "cmd+shift+h",
+        "key": "ctrl+shift+h"
       },
       {
         "command": "continue.acceptDiff",
@@ -510,6 +522,16 @@
           "command": "continue.viewHistory",
           "group": "navigation@2",
           "when": "activeWebviewPanelId == continue.continueGUIView"
+        },
+        {
+          "command": "inlet.runWorkflow",
+          "group": "navigation",
+          "when": "resourceExtname == '.py'"
+        },
+        {
+          "command": "inlet.runMapping",
+          "group": "navigation",
+          "when": "resourceExtname == '.py'"
         }
       ],
       "terminal/context": [
@@ -526,6 +548,13 @@
           "title": "Continue",
           "icon": "media/sidebar-icon.png"
         }
+      ],
+      "panel": [
+        {
+          "id": "panel-view",
+          "title": "Continue",
+          "icon": "media/sidebar-icon.png"
+        }
       ]
     },
     "views": {
@@ -533,6 +562,14 @@
         {
           "type": "webview",
           "id": "continue.continueGUIView",
+          "name": "",
+          "visibility": "visible"
+        }
+      ],
+      "panel-view": [
+        {
+          "type": "webview",
+          "id": "continue.inletPanel",
           "name": "",
           "visibility": "visible"
         }

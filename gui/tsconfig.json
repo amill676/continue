@@ -8,6 +8,7 @@
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": false,
+    "sourceMap": true, // XXX
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Node",
@@ -21,5 +22,6 @@
     // "strictNullChecks": true
   },
   "include": ["src", "../src/util/messenger.ts"],
+  "exclude": ["src/inlet/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -26,12 +26,15 @@ class Calculator {
     return this;
   }
 
-  getResult() {
-    return this.result;
+  modulus(number) {
+    if (number === 0) {
+      throw new Error("Cannot perform modulus by zero");
+    }
+    this.result %= number;
+    return this;
   }
 
-  reset() {
-    this.result = 0;
-    return this;
+  getResult() {
+    return this.result;
   }
 }

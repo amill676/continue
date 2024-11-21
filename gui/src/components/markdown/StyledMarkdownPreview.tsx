@@ -119,7 +119,8 @@ function getCodeChildrenContent(children: any) {
     typeof children[0] === "string" &&
     children[0] !== ""
   ) {
-    return children[0];
+    //return children[0];
+    return children.join("");
   }
 
   return undefined;
@@ -173,6 +174,7 @@ const StyledMarkdownPreview = memo(function StyledMarkdownPreview(
         return (tree) => {
           visit(tree, { tagName: "pre" }, (node: any) => {
             // Add an index (0, 1, 2, etc...) to each code block.
+            console.log("NODDDDDE", node);
             node.properties = { codeBlockIndex };
             codeBlockIndex++;
           });
@@ -198,6 +200,15 @@ const StyledMarkdownPreview = memo(function StyledMarkdownPreview(
             range,
           } = preProps?.children?.[0]?.props;
 
+          // If we don't have a codeBlockContent, we need to get it from the source
+          let codeContent = codeBlockContent;
+          if (!codeContent) {
+            codeContent = props.source?.slice(
+              node.position.start.offset,
+              node.position.end.offset,
+            );
+          }
+
           if (!props.isRenderingInStepContainer) {
             return <SyntaxHighlightedPre {...preProps} />;
           }
@@ -212,7 +223,7 @@ const StyledMarkdownPreview = memo(function StyledMarkdownPreview(
             return (
               <StepContainerPreActionButtons
                 language={language}
-                codeBlockContent={codeBlockContent}
+                codeBlockContent={codeContent}
                 codeBlockIndex={preProps.codeBlockIndex}
               >
                 <SyntaxHighlightedPre {...preProps} />
@@ -249,6 +260,7 @@ const StyledMarkdownPreview = memo(function StyledMarkdownPreview(
           return <code {...codeProps}>{codeProps.children}</code>;
         },
       },
+      passNode: true,
     },
   });
 

@@ -66,9 +66,11 @@ const exe = os === "win32" ? ".exe" : "";
   execCmdSync("npm install");
   console.log("[info] npm install in gui completed");
 
-  if (ghAction()) {
-    execCmdSync("npm run build");
-  }
+  // Needed to run this to ensure that the asset/index.js file is built, otherwise stuff fails below in this file
+  // if (ghAction()) {
+  //   execCmdSync("npm run build");
+  // }
+  execCmdSync("npm run build")
 
   // Copy over the dist folder to the JetBrains extension //
   const intellijExtensionWebviewPath = path.join(

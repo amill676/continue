@@ -5,6 +5,7 @@
     "lib": ["ES2022", "dom", "es6", "es5", "dom.iterable", "scripthost"],
     "outDir": "out/tsc/src",
     "sourceMap": true,
+    "skipLibCheck": true,
     "rootDir": "../../",
     "strict": true,
     "esModuleInterop": true,
