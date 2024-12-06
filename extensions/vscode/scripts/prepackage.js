@@ -70,7 +70,7 @@ const exe = os === "win32" ? ".exe" : "";
   // if (ghAction()) {
   //   execCmdSync("npm run build");
   // }
-  execCmdSync("npm run build")
+  // execCmdSync("npm run build")
 
   // Copy over the dist folder to the JetBrains extension //
   const intellijExtensionWebviewPath = path.join(

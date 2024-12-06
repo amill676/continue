@@ -157,6 +157,24 @@
         "group": "Inlet"
       },
       {
+        "command": "inlet.openMappingView",
+        "category": "Inlet",
+        "title": "Open Mapping View",
+        "group": "Inlet"
+      },
+      {
+        "command": "inlet.openInspector",
+        "category": "Inlet",
+        "title": "Open Inspector",
+        "group": "Inlet"
+      },
+      {
+        "command": "inlet.syncWorkflow",
+        "category": "Inlet",
+        "title": "Sync Workflow",
+        "group": "Inlet"
+      },
+      {
         "command": "continue.applyCodeFromChat",
         "category": "Continue",
         "title": "Apply code from chat",

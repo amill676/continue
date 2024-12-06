@@ -81,6 +81,7 @@ export function renderPrompt(
   snippets: AutocompleteSnippet[],
   workspaceDirs: string[],
   helper: HelperVars,
+  context: string | undefined,
 ): {
   prompt: string;
   prefix: string;
@@ -112,6 +113,10 @@ export function renderPrompt(
       reponame,
       snippets,
     );
+  }
+
+  if (context) {
+    prefix = `${context}\n\n${prefix}`
   }
 
   // Templates can be passed as a Handlebars template string or a function

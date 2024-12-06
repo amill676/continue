@@ -5,7 +5,7 @@
   "author": "Continue Dev, Inc",
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm link @inlet/web && vite",
     "tsc:check": "tsc -p ./ --noEmit",
     "build": "tsc && vite build",
     "preview": "vite preview",

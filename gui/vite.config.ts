@@ -13,7 +13,13 @@ export default defineConfig({
       input: {
         index: path.resolve(__dirname, 'index.html'),
         mapping: path.resolve(__dirname, 'mapping.html'),
+        inspect: path.resolve(__dirname, 'inspect.html'),
       },
+      // Needed this or vite build failed
+      // external: (id) => {
+      //   // Mark all imports from '@inlet/web' as external
+      //   return /^@inlet\/web\//.test(id);
+      // },
       output: {
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,

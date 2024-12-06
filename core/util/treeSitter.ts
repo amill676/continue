@@ -73,6 +73,9 @@ export const supportedLanguages: { [key: string]: string } = {
   rdl: "systemrdl",
   toml: "toml",
   sol: "solidity",
+  sql: "sql",
+  mysql: "sql",
+  pgsql: "sql",
 
   // jl: "julia",
   // swift: "swift",

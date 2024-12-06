@@ -21,7 +21,7 @@
     // Disabled for now since it's causing too many errors
     // "strictNullChecks": true
   },
-  "include": ["src", "../src/util/messenger.ts"],
+  "include": ["src", "../src/util/messenger.ts", "src/types.d.ts"],
   "exclude": ["src/inlet/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

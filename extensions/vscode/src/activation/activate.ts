@@ -19,9 +19,9 @@ export async function activateExtension(context: vscode.ExtensionContext) {
   registerQuickFixProvider();
   setupInlineTips(context);
 
-  inletActivate(context);
 
   const vscodeExtension = new VsCodeExtension(context);
+  inletActivate(context, vscodeExtension);
 
   // Load Continue configuration
   if (!context.globalState.get("hasBeenInstalled")) {

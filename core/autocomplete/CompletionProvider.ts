@@ -21,7 +21,7 @@ import { AutocompleteLoggingService } from "./util/AutocompleteLoggingService.js
 import AutocompleteLruCache from "./util/AutocompleteLruCache.js";
 import { HelperVars } from "./util/HelperVars.js";
 import { AutocompleteInput, AutocompleteOutcome } from "./util/types.js";
-import { getVariableDataSnippets } from "../../inlet/VariableDataProvider";
+import { getVariableDataSnippets } from "../inlet/VariableDataProvider";
 const autocompleteCache = AutocompleteLruCache.get();
 
 // Errors that can be expected on occasion even during normal functioning should not be shown.
@@ -175,7 +175,8 @@ export class CompletionProvider {
       // Some IDEs might have special ways of finding snippets (e.g. JetBrains and VS Code have different "LSP-equivalent" systems,
       // or they might separately track recently edited ranges)
       const extraSnippets = await this._getExtraSnippets(helper);
-      const variableDataSnippets = await getVariableDataSnippets(input, this.ide);
+      const mappingContext = await getVariableDataSnippets(input, this.ide);
+      console.log("MAPPING CONTEXT", mappingContext)
 
       let snippets = await constructAutocompletePrompt(
         helper,
@@ -187,15 +188,22 @@ export class CompletionProvider {
         snippets,
         await this.ide.getWorkspaceDirs(),
         helper,
+        mappingContext,
       );
 
       // Completion
       let completion: string | undefined = "";
 
       const cache = await autocompleteCache;
-      const cachedCompletion = helper.options.useCache
-        ? await cache.get(helper.prunedPrefix)
-        : undefined;
+      let cachedCompletion: string | undefined;
+      try {
+        cachedCompletion = helper.options.useCache
+          ? await cache.get(helper.prunedPrefix)
+          : undefined;
+      } catch (e) {
+        console.warn('Error accessing autocomplete cache:', e);
+        cachedCompletion = undefined;
+      }
       let cacheHit = false;
       if (cachedCompletion) {
         // Cache

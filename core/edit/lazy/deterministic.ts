@@ -110,7 +110,8 @@ export async function deterministicApplyLazyEdit(
 ): Promise<DiffLine[] | undefined> {
   const parser = await getParserForFile(filename);
   if (!parser) {
-    return undefined;
+    // XXX Added this since sql doesn't have a parser
+    return myersDiff(oldFile, newLazyFile)
   }
 
   const oldTree = parser.parse(oldFile);

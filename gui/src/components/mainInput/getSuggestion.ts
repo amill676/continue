@@ -148,6 +148,8 @@ export function getContextProviderDropdownOptions(
         }))
         .sort((c, _) => (c.id === "file" ? -1 : 1)) || [];
 
+    console.log("SORUCES", availableContextProvidersRef.current)
+
     if (mainResults.length === 0) {
       const results = getSubmenuContextItemsRef.current(undefined, query);
       return results.map((result) => {
