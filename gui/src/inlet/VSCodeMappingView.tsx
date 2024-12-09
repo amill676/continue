@@ -1,4 +1,4 @@
-import { MantineReactInnerTargetTable} from "@inlet/web/main/NewMappingView"
+import { MantineReactInnerTargetTable, TableDataPreview, GlobalTableStyles } from "@inlet/web/main/NewMappingView"
 import { attach } from "@inlet/web/common/ReactStore"
 import store, { WorkflowEditStore, _traverseTargetFields } from "@inlet/web/main/WorkflowEditStore"
 import IDEDelegate from "./IDEDelegate"
@@ -24,12 +24,11 @@ window.addEventListener('message', event => {
 });
 
 function handleClickPreviewMapping(
-    targetIndex: number, fieldIndex: number, mappingIndex: number) {
-  store.handleClickPreviewMapping(targetIndex, fieldIndex, mappingIndex).then(() => {
+    targetIndex: number, fieldIndex: number, mappingExpression: string) {
+  store.handleClickPreviewMapping(targetIndex, fieldIndex, mappingExpression).then(mapping => {
     let target = store.state.fieldMappingState?.targets[targetIndex]
     let fields = _traverseTargetFields(target?.fields)
     let field = fields[fieldIndex]
-    let mapping = field?.potential_mappings[mappingIndex]
     console.log("MAPPING", mapping)
     vscode.postMessage({
       command: 'applyMapping',
@@ -65,7 +64,7 @@ function handleClickRejectMapping(
 }
 
 
-const VSCodeMappingView = attach(
+const TableWrapper = attach(
   store,
   MantineReactInnerTargetTable,
   {
@@ -92,16 +91,33 @@ const VSCodeMappingView = attach(
     handleClickPreviewMapping: handleClickPreviewMapping,
     onClickAcceptMapping: handleClickAcceptMapping,
     onClickRejectMapping: handleClickRejectMapping,
+    onSuggestionHover: store.handleSuggestionHover.bind(store),
   }
 )
+
+
+function TargetTable(props) {
+  return (
+    <div style={{position: 'relative', overflow: 'auto'}}>
+      <TableWrapper/>
+      <TableDataPreview/>
+      <GlobalTableStyles/>
+    </div>
+  )
+}
+
+
 
 function MappingPanel() {
   return (
     <>
       <h1>Inlet Mapping</h1>
-      <VSCodeMappingView />
+      <TargetTable/>
     </>
   )
 
 }
-export { VSCodeMappingView, MappingPanel }
+
+
+
+export { MappingPanel }
