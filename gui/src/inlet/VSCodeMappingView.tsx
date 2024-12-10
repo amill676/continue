@@ -24,8 +24,8 @@ window.addEventListener('message', event => {
 });
 
 function handleClickPreviewMapping(
-    targetIndex: number, fieldIndex: number, mappingExpression: string) {
-  store.handleClickPreviewMapping(targetIndex, fieldIndex, mappingExpression).then(mapping => {
+    targetIndex: number, fieldIndex: number, mappingExpression: string, sourceId: string) {
+  store.handleClickPreviewMapping(targetIndex, fieldIndex, mappingExpression, sourceId).then(mapping => {
     let target = store.state.fieldMappingState?.targets[targetIndex]
     let fields = _traverseTargetFields(target?.fields)
     let field = fields[fieldIndex]
@@ -92,6 +92,8 @@ const TableWrapper = attach(
     onClickAcceptMapping: handleClickAcceptMapping,
     onClickRejectMapping: handleClickRejectMapping,
     onSuggestionHover: store.handleSuggestionHover.bind(store),
+    setFieldValue: store.handleChangeOutputFieldMapping.bind(store),
+    saveFieldMappingState: store.saveFieldMappingState.bind(store),
   }
 )
 
