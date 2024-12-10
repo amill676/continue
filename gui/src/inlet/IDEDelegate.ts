@@ -1,3 +1,6 @@
+declare const vscode: {
+    postMessage: (message: any) => void;
+};
 
 export default class IDEDelegate {
   private messageCounter = 0;
@@ -27,10 +30,11 @@ export default class IDEDelegate {
   /**
    * Sends a message to the extension and waits for a response
    */
+  // @ts-ignore
   private async sendRequest(command: string, data?: any): Promise {
     const id = ++this.messageCounter;
     
-    return new Promise<T>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       // Store the promise callbacks
       this.pendingRequests.set(id, { resolve, reject });
 
@@ -54,7 +58,7 @@ export default class IDEDelegate {
   // Example usage
   async getTargetCode(targetName: string): Promise<string> {
     const response = await this.sendRequest('getTargetCode', { targetName });
-    console.log("RESPONSE", response)
+    // console.log("RESPONSE", response);
     return response.code;
   }
 

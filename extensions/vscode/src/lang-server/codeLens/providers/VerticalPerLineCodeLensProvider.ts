@@ -27,6 +27,12 @@ export class VerticalDiffCodeLensProvider implements vscode.CodeLensProvider {
     const filepath = document.uri.fsPath;
     const blocks = this.editorToVerticalDiffCodeLens.get(filepath);
 
+    console.log('provideCodeLenses():', {
+      filepath,
+      hasBlocks: !!blocks,
+      numBlocks: blocks?.length
+    });
+
     if (!blocks) {
       return [];
     }

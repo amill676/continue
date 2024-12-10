@@ -26,7 +26,14 @@ export class VerticalDiffHandler implements vscode.Disposable {
   private cancelled = false;
   private newLinesAdded = 0;
   private get diffBlocks() {
-    return this.editorToVerticalDiffCodeLens.get(this.filepath) || [];
+    console.log('vertical/handler.ts VerticalDiffHandler diffBlocks()')
+    let blocks = this.editorToVerticalDiffCodeLens.get(this.filepath);
+    if (!blocks) {
+      blocks = [];
+      this.editorToVerticalDiffCodeLens.set(this.filepath, blocks);
+    }
+    console.log('Current blocks:', blocks);
+    return blocks;
   }
   public get range(): vscode.Range {
     const startLine = Math.min(this.startLine, this.endLine);
@@ -82,7 +89,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   private deletionBuffer: string[] = [];
-  private redDecorationManager: DecorationTypeRangeManager;
+  public redDecorationManager: DecorationTypeRangeManager;
   insertedInCurrentBlock = 0;
 
   private async insertDeletionBuffer() {
@@ -98,13 +105,15 @@ export class VerticalDiffHandler implements vscode.Disposable {
     }
 
     if (this.deletionBuffer.length || this.insertedInCurrentBlock > 0) {
-      this.diffBlocks.push({
+      const block = {
         start: this.currentLineIndex - this.insertedInCurrentBlock,
         numRed: this.deletionBuffer.length,
         numGreen: this.insertedInCurrentBlock,
-      });
-
+      };
+      console.log('vertical/handler.ts insertDeletionBuffer() Adding diff block:', block);
+      this.diffBlocks.push(block);
       this.editorToVerticalDiffCodeLens.set(this.filepath, this.diffBlocks);
+      console.log('Map after update:', this.editorToVerticalDiffCodeLens);
     }
 
     if (this.deletionBuffer.length === 0) {
@@ -144,9 +153,43 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.updateIndexLineDecorations();
   }
 
-  private greenDecorationManager: DecorationTypeRangeManager;
+  public greenDecorationManager: DecorationTypeRangeManager;
+
+  // Add methods to get block text
+  public getBlockOriginalText(index: number): string {
+    const block = this.diffBlocks[index];
+    if (!block) return '';
+    
+    // Get the text from red (original) lines
+    const startLine = block.start;
+    const endLine = startLine + block.numRed;
+    const lines: string[] = [];
+    
+    for (let i = startLine; i < endLine; i++) {
+      lines.push(this.editor.document.lineAt(i).text);
+    }
+    
+    return lines.join('\n');
+  }
+
+  public getBlockNewText(index: number): string {
+    const block = this.diffBlocks[index];
+    if (!block) return '';
+    
+    // Get the text from green (new) lines
+    const startLine = block.start + block.numRed;
+    const endLine = startLine + block.numGreen;
+    const lines: string[] = [];
+    
+    for (let i = startLine; i < endLine; i++) {
+      lines.push(this.editor.document.lineAt(i).text);
+    }
+    
+    return lines.join('\n');
+  }
 
   private async insertTextAboveLine(index: number, text: string) {
+    console.log('vertical/handler.ts insertTextAboveLine(): ', index, text)
     await this.editor.edit(
       (editBuilder) => {
         const lineCount = this.editor.document.lineCount;
@@ -177,6 +220,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   private async deleteLinesAt(index: number, numLines = 1) {
+    console.log('vertical/handler.ts deleteLinesAt(): ', index, numLines)
     const startLine = new vscode.Position(index, 0);
     await this.editor.edit(
       (editBuilder) => {
@@ -239,6 +283,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   async clear(accept: boolean) {
+    console.log('vertical/handler.ts clear(): ', accept)
     vscode.commands.executeCommand(
       "setContext",
       "continue.streamingDiff",
@@ -253,7 +298,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.clearIndexLineDecorations();
 
     this.editorToVerticalDiffCodeLens.delete(this.filepath);
-
+    console.log('calling this.editor.edit')
     await this.editor.edit(
       (editBuilder) => {
         for (const range of rangesToDelete) {
@@ -381,32 +426,49 @@ export class VerticalDiffHandler implements vscode.Disposable {
     numGreen: number,
     numRed: number,
   ) {
+    console.log('vertical/handler.ts acceptRejectBlock()', accept, startLine, numGreen, numRed)
+    // Delete the editor decorations first (these don't affect undo history)
     if (numGreen > 0) {
-      // Delete the editor decoration
       this.greenDecorationManager.deleteRangeStartingAt(startLine + numRed);
-      if (!accept) {
-        // Delete the actual lines
-        await this.deleteLinesAt(startLine + numRed, numGreen);
-      }
     }
-
     if (numRed > 0) {
-      const rangeToDelete =
-        this.redDecorationManager.deleteRangeStartingAt(startLine);
-
-      if (accept) {
-        // Delete the actual lines
-        await this.deleteLinesAt(startLine, numRed);
-      }
+      this.redDecorationManager.deleteRangeStartingAt(startLine);
     }
+
+    // Combine all edits into a single operation
+    await this.editor.edit(
+      (editBuilder) => {
+        console.log('making edits...')
+        if (accept) {
+          // If accepting, delete the red (old) lines
+          if (numRed > 0) {
+            editBuilder.delete(new vscode.Range(
+              new vscode.Position(startLine, 0),
+              new vscode.Position(startLine + numRed, 0)
+            ));
+          }
+        } else {
+          // If rejecting, delete the green (new) lines
+          if (numGreen > 0) {
+            editBuilder.delete(new vscode.Range(
+              new vscode.Position(startLine + numRed, 0),
+              new vscode.Position(startLine + numRed + numGreen, 0)
+            ));
+          }
+        }
+      },
+      {
+        undoStopBefore: false,
+        undoStopAfter: false,
+      }
+    );
 
     // Shift everything below upward
     const offset = -(accept ? numRed : numGreen);
-
     this.redDecorationManager.shiftDownAfterLine(startLine, offset);
     this.greenDecorationManager.shiftDownAfterLine(startLine, offset);
 
-    // Shift the codelens objects
+    // Update codelens
     this.shiftCodeLensObjects(startLine, offset);
 
     const status = this.diffBlocks.length === 0 ? "closed" : undefined;

@@ -27,12 +27,129 @@ export class VerticalDiffManager {
 
   logDiffs: DiffLine[] | undefined;
 
+  // Track the state of each diff block
+  private diffBlockStates: Map<string, {
+    filepath: string,
+    blockIndex: number,
+    originalText: string,
+    newText: string,
+    isAccepted: boolean
+  }[]> = new Map();
+
+  // Add property to store last diff state
+  private lastDiffState: {
+    filepath: string;
+    blocks: VerticalDiffCodeLens[];
+    diffLines: DiffLine[];
+  } | undefined;
+
   constructor(
     private readonly configHandler: ConfigHandler,
     private readonly webviewProtocol: VsCodeWebviewProtocol,
     private readonly editDecorationManager: EditDecorationManager,
   ) {
     this.userChangeListener = undefined;
+    // Listen for both undo and redo events
+    vscode.workspace.onDidChangeTextDocument(e => {
+      if (e.contentChanges.length > 0 && 
+          (e.reason === vscode.TextDocumentChangeReason.Undo || 
+           e.reason === vscode.TextDocumentChangeReason.Redo)) {
+        this.restoreLastDiff();
+      }
+    });
+  }
+
+  private async syncStateWithText(document: vscode.TextDocument) {
+    const filepath = document.uri.fsPath;
+    const blockStates = this.diffBlockStates.get(filepath);
+    if (!blockStates) return;
+
+    const currentText = document.getText();
+    
+    // Re-evaluate each block's state based on current text
+    const updatedBlocks = blockStates.map(block => {
+      const isAccepted = currentText.includes(block.newText) && 
+                        !currentText.includes(block.originalText);
+      return { ...block, isAccepted };
+    });
+
+    // Update decorations and codelens based on new state
+    await this.updateDecorations(filepath, updatedBlocks);
+    this.refreshCodeLens();
+  }
+
+  private async updateDecorations(
+    filepath: string, 
+    blockStates: Array<{ isAccepted: boolean, /* ... */ }>
+  ) {
+    const handler = this.getHandlerForFile(filepath);
+    if (!handler) return;
+
+    // Clear existing decorations
+    handler.redDecorationManager.clear();
+    handler.greenDecorationManager.clear();
+
+    // Reapply decorations based on current state
+    for (const block of blockStates) {
+      if (block.isAccepted) {
+        // Apply accepted state decorations
+        handler.greenDecorationManager.addLines(/*...*/);
+      } else {
+        // Apply rejected/pending state decorations
+        handler.redDecorationManager.addLines(/*...*/);
+      }
+    }
+  }
+
+  private saveDiffState(filepath: string) {
+    console.log('saveDiffState()');
+    const blocks = [...(this.filepathToCodeLens.get(filepath) || [])];
+    const diffLines = [...(this.logDiffs || [])];
+    this.lastDiffState = { filepath, blocks, diffLines };
+  }
+
+  private async restoreLastDiff() {
+    console.log('vertical/manager.ts restoreLastDiff()');
+    if (!this.lastDiffState) {
+      return;
+    }
+
+    const { filepath, blocks, diffLines } = this.lastDiffState;
+    
+    // Create a new handler
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.fsPath !== filepath) {
+      return;
+    }
+
+    const handler = this.createVerticalDiffHandler(
+      filepath,
+      0,
+      editor.document.lineCount - 1,
+      {
+        onStatusUpdate: () => {},
+      }
+    );
+
+    if (!handler) {
+      return;
+    }
+
+    // Restore the diff state
+    this.filepathToCodeLens.set(filepath, blocks);
+    this.logDiffs = diffLines;
+
+    // Re-run the diff to restore decorations
+    console.log('vertical/manager.ts restoreLastDiff() restoring diffLines: ', diffLines)
+    await handler.run(this.createDiffGenerator(diffLines));
+    this.refreshCodeLens();
+  }
+
+  // Helper to convert stored diff lines into a generator
+  private async *createDiffGenerator(diffLines: DiffLine[]): AsyncGenerator<DiffLine> {
+    for (const line of diffLines) {
+      yield line;
+    }
   }
 
   createVerticalDiffHandler(
@@ -116,9 +233,13 @@ export class VerticalDiffManager {
   }
 
   clearForFilepath(filepath: string | undefined, accept: boolean) {
+    console.log('clearForFilepath() called with:', { filepath, accept });
+    // console.log('Stack trace:', new Error().stack);
+
     if (!filepath) {
       const activeEditor = vscode.window.activeTextEditor;
       if (!activeEditor) {
+        console.log('No active editor found when trying to clear undefined filepath');
         return;
       }
       filepath = activeEditor.document.uri.fsPath;
@@ -140,6 +261,7 @@ export class VerticalDiffManager {
     filepath?: string,
     index?: number,
   ) {
+    console.log('manager.ts acceptRejectVerticalDiffBlock(): ', accept, filepath, index);
     if (!filepath) {
       const activeEditor = vscode.window.activeTextEditor;
       if (!activeEditor) {
@@ -147,6 +269,10 @@ export class VerticalDiffManager {
       }
       filepath = activeEditor.document.uri.fsPath;
     }
+
+    // Save the diff state before making changes
+    // SEAN TODO: this might control the accept/reject buttons somehow
+    // this.saveDiffState(filepath);
 
     if (typeof index === "undefined") {
       index = 0;

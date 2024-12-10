@@ -4,6 +4,10 @@ import store, { WorkflowEditStore, _traverseTargetFields } from "@inlet/web/main
 import IDEDelegate from "./IDEDelegate"
 
 
+declare const vscode: {
+  postMessage: (message: any) => void;
+};
+
 const ideDelegate = new IDEDelegate()
 store.setIDE(ideDelegate)
 
