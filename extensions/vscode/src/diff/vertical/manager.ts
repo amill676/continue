@@ -27,22 +27,6 @@ export class VerticalDiffManager {
 
   logDiffs: DiffLine[] | undefined;
 
-  // Track the state of each diff block
-  private diffBlockStates: Map<string, {
-    filepath: string,
-    blockIndex: number,
-    originalText: string,
-    newText: string,
-    isAccepted: boolean
-  }[]> = new Map();
-
-  // Add property to store last diff state
-  private lastDiffState: {
-    filepath: string;
-    blocks: VerticalDiffCodeLens[];
-    diffLines: DiffLine[];
-  } | undefined;
-
   constructor(
     private readonly configHandler: ConfigHandler,
     private readonly webviewProtocol: VsCodeWebviewProtocol,
@@ -168,10 +152,6 @@ export class VerticalDiffManager {
       }
       filepath = activeEditor.document.uri.fsPath;
     }
-
-    // Save the diff state before making changes
-    // SEAN TODO: this might control the accept/reject buttons somehow
-    // this.saveDiffState(filepath);
 
     if (typeof index === "undefined") {
       index = 0;

@@ -7,7 +7,6 @@ import { exec } from "child_process";
 import { VsCodeExtension } from "../extensions/vscode/src/extension/VsCodeExtension";
 import { VsCodeIde } from "../extensions/vscode/src/VsCodeIde";
 import { deterministicApplyLazyEdit } from "../core/edit/lazy/deterministic";
-import { VerticalDiffCodeLensProvider } from "../extensions/vscode/src/lang-server/codeLens/providers/VerticalPerLineCodeLensProvider";
 
 // Add this at the top of the file, outside any function
 let mappingPanel: vscode.WebviewPanel | undefined;
@@ -261,39 +260,8 @@ export function inletActivate(
       "inlet.syncWorkflow", syncWorkflow.bind(null, inletExtension, context))
   );
 
-  // Register the CodeLens provider
-  // SEAN TODO: uncomment this if the buttons disappear
-  const verticalDiffManager = extension.verticalDiffManager;
-  const codeLensProvider = new VerticalDiffCodeLensProvider(
-    verticalDiffManager.filepathToCodeLens
-  );
-  // context.subscriptions.push(
-  //   vscode.languages.registerCodeLensProvider(
-  //       { scheme: 'file' },  // Or specific language types
-  //       codeLensProvider
-  //   )
-  // );
-  // Set up the refresh callback
-  // verticalDiffManager.refreshCodeLens = () => {
-  //     codeLensProvider.refresh();
-  // };
-  // Register the accept/reject commands
+  // Register the diff manager
   vscode.commands.executeCommand('setContext', 'continue.hasVerticalDiffManager', true)
-
-  // context.subscriptions.push(
-  //   vscode.commands.registerCommand('continue.acceptVerticalDiffBlock', 
-  //     async (filepath: string, index: number) => {
-  //       console.log('Accepting vertical diff block:', {filepath, index});
-  //       verticalDiffManager.acceptRejectVerticalDiffBlock(true, filepath, index)
-  //     }
-  //   ),
-  //   vscode.commands.registerCommand('continue.rejectVerticalDiffBlock',
-  //     async (filepath: string, index: number) => {
-  //       console.log('Rejecting vertical diff block:', {filepath, index});
-  //       verticalDiffManager.acceptRejectVerticalDiffBlock(false, filepath, index)
-  //     }
-  //   )
-  // );
 }
 
 
