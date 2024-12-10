@@ -89,7 +89,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   private deletionBuffer: string[] = [];
-  public redDecorationManager: DecorationTypeRangeManager;
+  private redDecorationManager: DecorationTypeRangeManager;
   insertedInCurrentBlock = 0;
 
   private async insertDeletionBuffer() {
@@ -153,40 +153,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.updateIndexLineDecorations();
   }
 
-  public greenDecorationManager: DecorationTypeRangeManager;
-
-  // Add methods to get block text
-  public getBlockOriginalText(index: number): string {
-    const block = this.diffBlocks[index];
-    if (!block) return '';
-    
-    // Get the text from red (original) lines
-    const startLine = block.start;
-    const endLine = startLine + block.numRed;
-    const lines: string[] = [];
-    
-    for (let i = startLine; i < endLine; i++) {
-      lines.push(this.editor.document.lineAt(i).text);
-    }
-    
-    return lines.join('\n');
-  }
-
-  public getBlockNewText(index: number): string {
-    const block = this.diffBlocks[index];
-    if (!block) return '';
-    
-    // Get the text from green (new) lines
-    const startLine = block.start + block.numRed;
-    const endLine = startLine + block.numGreen;
-    const lines: string[] = [];
-    
-    for (let i = startLine; i < endLine; i++) {
-      lines.push(this.editor.document.lineAt(i).text);
-    }
-    
-    return lines.join('\n');
-  }
+  private greenDecorationManager: DecorationTypeRangeManager;
 
   private async insertTextAboveLine(index: number, text: string) {
     console.log('vertical/handler.ts insertTextAboveLine(): ', index, text)
