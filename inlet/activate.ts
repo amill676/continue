@@ -395,16 +395,60 @@ async function runMapping(inletExtension: InletExtension, context: vscode.Extens
 }
 
 async function syncWorkflow(inletExtension: InletExtension, context: vscode.ExtensionContext) {
-  let config = await inletUtils.getInletProjectConfig(inletExtension.extension.ide)
-  config.workflow?.mappings.forEach(async mapping => {
-    let path = mapping.path
-    let fullPath = await inletUtils.getFullPath(inletExtension.extension.ide, path)
-    let content = await inletExtension.extension.ide.readFile(fullPath)
-    await updateMappingCode(config, mapping.name, content)
-  })
+  const ide = inletExtension.extension.ide;
+  let config = await inletUtils.getInletProjectConfig(ide);
+  if (!config?.include || !Array.isArray(config.include)) {
+    throw new Error("No include patterns specified in inlet config");
+  }
+
+  // Process each include pattern
+  for (const pattern of config.include) {
+    // Get absolute path by resolving relative to workspace
+    const workspaceDirs = await ide.getWorkspaceDirs();
+    if (!workspaceDirs.length) {
+      throw new Error("No workspace directory found");
+    }
+
+    const baseDir = workspaceDirs[0];
+    const absolutePattern = await inletUtils.getFullPath(ide, pattern);
+    if (!absolutePattern) continue;
+
+    // Find all SQL files matching the glob pattern
+    const sqlFiles = await findSqlFiles(absolutePattern);
+    for (const filepath of sqlFiles) {
+      const content = await ide.readFile(filepath);
+      if (content) {
+        // Get just the filename without extension
+        const targetName = filepath.split('/').pop()?.replace(/\.sql$/, '');
+        if (!targetName) continue;
+        await updateMappingCode(config, targetName, content);
+      }
+    }
+  }
+}
+
+async function findSqlFiles(globPattern: string): Promise<string[]> {
+  const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+  // Convert absolute path to workspace-relative path
+  let relPath = globPattern;
+  if (globPattern.startsWith(workspaceRoot)) {
+    relPath = globPattern.substring(workspaceRoot.length + 1); // +1 for the trailing slash
+  }
+  // Convert the glob pattern to VSCode format
+  const pattern = relPath.endsWith('*')
+    ? relPath.slice(0, -1) + '{**/*.sql,*.sql}'  // Match both nested and direct .sql files
+    : relPath + '{**/*.sql,*.sql}';              // Match both nested and direct .sql files
+  // Create a proper VSCode relative pattern
+  const relativePattern = new vscode.RelativePattern(
+    vscode.workspace.workspaceFolders![0],
+    pattern.replace(/^\/+/, '') // Remove leading slashes
+  );
+  const files = await vscode.workspace.findFiles(relativePattern);
+  return files.map(file => file.fsPath);
 }
 
 async function updateMappingCode(config, targetName, mappingCode) {
+  console.log('updateMappingCode(): ', targetName)
   // Get the mapping target
   const targetsResponse = await inletUtils.get(
     `/v0/workflows/${config.workflow.id}/mappingtargets`
