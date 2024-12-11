@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { YAML } from "../core/inlet/utils"
 
 import { InletMappingWebviewProvider } from "./InletMappingWebviewProvider";
 import { InletInspectPanelWebviewProvider, } from "./InletInspectPanelWebviewProvider"
@@ -7,6 +8,7 @@ import { exec } from "child_process";
 import { VsCodeExtension } from "../extensions/vscode/src/extension/VsCodeExtension";
 import { VsCodeIde } from "../extensions/vscode/src/VsCodeIde";
 import { deterministicApplyLazyEdit } from "../core/edit/lazy/deterministic";
+import path from "path";
 
 // Add this at the top of the file, outside any function
 let mappingPanel: vscode.WebviewPanel | undefined;
@@ -99,6 +101,7 @@ class InletExtension {
         newContent,
         filepath
       )
+      console.log('activate.ts applyMapping() diffLines: ', diffLines)
 
       const verticalDiffManager = this.extension.verticalDiffManager
       await verticalDiffManager.streamDiffLines(diffLines, false, "inlet-mapping")
@@ -411,19 +414,86 @@ async function syncWorkflow(inletExtension: InletExtension, context: vscode.Exte
 
     const baseDir = workspaceDirs[0];
     const absolutePattern = await inletUtils.getFullPath(ide, pattern);
+    console.log('absolutePattern: ', absolutePattern);
     if (!absolutePattern) continue;
 
-    // Find all SQL files matching the glob pattern
-    const sqlFiles = await findSqlFiles(absolutePattern);
-    for (const filepath of sqlFiles) {
-      const content = await ide.readFile(filepath);
-      if (content) {
-        // Get just the filename without extension
-        const targetName = filepath.split('/').pop()?.replace(/\.sql$/, '');
-        if (!targetName) continue;
-        await updateMappingCode(config, targetName, content);
+    // Find all sources in the given absolute pattern
+    const sources = await findSources(absolutePattern);
+    console.log('sources: ', sources);
+    if (sources == null) continue;
+    await syncSources(config.workflow.id, sources);
+
+  // SEAN TODO: update mapping sources based on parsing sources from `schema.yml` in "include" path
+  // note for that: send POST to /v0/workflows/(?P<workflow_id>\w+)/inputfields/
+  // and pass in:
+  // text='', input_type='warehouse', warehouse_type='bigquery',
+  // warehouse_fields={project_id, dataset_id, table_id}
+
+    // // Find all SQL files matching the glob pattern
+    // const sqlFiles = await findSqlFiles(absolutePattern);
+    // for (const filepath of sqlFiles) {
+    //   const content = await ide.readFile(filepath);
+    //   if (content) {
+    //     // Get just the filename without extension
+    //     const targetName = filepath.split('/').pop()?.replace(/\.sql$/, '');
+    //     if (!targetName) continue;
+    //     await updateMappingCode(config, targetName, content);
+    //   }
+    // }
+  }
+
+  async function syncSources(workflowId: string, sources: any[]) {
+    console.log('syncSources(): ', workflowId, sources);
+    for (const source of sources) {
+      const data = {
+        text: '',
+        input_type: 'warehouse',
+        warehouse_type: 'bigquery',
+        warehouse_fields: {
+          project_id: source.database,
+          dataset_id: source.schema,
+          table_id: source.table
+        },
+        upsert: true
+      }
+      console.log('making request...')
+      const response = await inletUtils.post(
+        `/v0/workflows/${workflowId}/inputfields/`,
+        data
+      )
+      console.log('response: ', response);
+    }
+  }
+
+  async function findSources(absolutePattern: string) {
+    // find `schema.yml` in the given absolute pattern
+    const baseDir = absolutePattern.endsWith('*') 
+    ? absolutePattern.slice(0, -1) 
+    : absolutePattern;
+    const schemaYmlPath = path.join(baseDir, 'schema.yml');
+    if (!schemaYmlPath) return;
+    const schemaYmlContent = await ide.readFile(schemaYmlPath);
+    if (!schemaYmlContent) return;
+    // parse the schema.yml file
+    const schema = YAML.parse(schemaYmlContent)
+    console.log('schema.yml: ', schema);
+    const sources = [];
+    for (const source of schema.sources) {
+      console.log('source: ', source);
+      const name = source.name;
+      const database = source.database;
+      const schema = source.schema;
+      for (const table of source.tables) {
+        const tableName = table.name;
+        sources.push({
+          name: name,
+          database: database,
+          schema: schema,
+          table: tableName,
+        })
       }
     }
+    return sources;
   }
 }
 

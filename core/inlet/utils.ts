@@ -108,3 +108,5 @@ export async function getFullPath(ide: IDE, filepath: string) {
   let workingDir = await getWorkingDirectory(ide)
   return path.join(workingDir, filepath)
 }
+
+export { default as YAML } from "yaml"
