@@ -449,6 +449,8 @@ async function findSqlFiles(globPattern: string): Promise<string[]> {
 
 async function updateMappingCode(config, targetName, mappingCode) {
   console.log('updateMappingCode(): ', targetName)
+  // SEAN TODO: change this part to hit a /mappingtargets endpoint that upserts the targets,
+  // using each target's name as the unique ID
   // Get the mapping target
   const targetsResponse = await inletUtils.get(
     `/v0/workflows/${config.workflow.id}/mappingtargets`
