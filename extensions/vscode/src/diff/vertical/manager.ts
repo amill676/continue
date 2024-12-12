@@ -252,6 +252,7 @@ export class VerticalDiffManager {
 
     try {
       this.logDiffs = await diffHandler.run(diffStream);
+      console.log('vertical/manager.ts streamDiffLines() this.logDiffs: ', this.logDiffs)
 
       // enable a listener for user edits to file while diff is open
       this.enableDocumentChangeListener();

@@ -14,6 +14,8 @@ import path from "path";
 let mappingPanel: vscode.WebviewPanel | undefined;
 let inspectPanel: vscode.WebviewPanel | undefined;
 
+let mappingInProgress = false;
+
 class InletExtension {
   constructor(public extension: VsCodeExtension) {
     this.extension = extension
@@ -30,7 +32,14 @@ class InletExtension {
           response = { code };
           break;
         case 'applyMapping':
+          if (mappingInProgress) {
+            // this lock exists to prevent diffs from getting screwed up
+            console.warn("Mapping already in progress - skipping new mapping");
+            break;
+          }
+          mappingInProgress = true;
           await this.applyMapping(message.data.target, message.data.field, message.data.mapping)
+          mappingInProgress = false;
           break;
         case 'acceptDiff':
           await this.acceptDiff(message.data.targetName)
@@ -76,7 +85,8 @@ class InletExtension {
   }
 
   async applyMapping(target, field, mapping) {
-    console.log("APPLYING MAPPING", target, field, mapping)
+    console.log("APPLYING MAPPING")
+    console.log('mapping args: ', target, field, mapping)
     // Get current directory
     const workingDirs = await this.extension.ide.getWorkspaceDirs()
     const filepath = await inletUtils.fileForTarget(this.extension.ide, workingDirs[0], target.name)
@@ -96,6 +106,9 @@ class InletExtension {
       const document = existingEditor.document
       const currentContent = await this.extension.ide.readFile(filepath)
       const newContent = mapping.new_mapping_code
+      console.log('MAPPING: currentContent: ', currentContent)
+      console.log('MAPPING: newContent: ', newContent)
+      console.log('MAPPING: filepath: ', filepath)
       const diffLines = await deterministicApplyLazyEdit(
         currentContent,
         newContent,
@@ -422,12 +435,6 @@ async function syncWorkflow(inletExtension: InletExtension, context: vscode.Exte
     console.log('sources: ', sources);
     if (sources == null) continue;
     await syncSources(config.workflow.id, sources);
-
-  // SEAN TODO: update mapping sources based on parsing sources from `schema.yml` in "include" path
-  // note for that: send POST to /v0/workflows/(?P<workflow_id>\w+)/inputfields/
-  // and pass in:
-  // text='', input_type='warehouse', warehouse_type='bigquery',
-  // warehouse_fields={project_id, dataset_id, table_id}
 
     // // Find all SQL files matching the glob pattern
     // const sqlFiles = await findSqlFiles(absolutePattern);

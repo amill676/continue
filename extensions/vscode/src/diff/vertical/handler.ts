@@ -25,16 +25,16 @@ export class VerticalDiffHandler implements vscode.Disposable {
   private currentLineIndex: number;
   private cancelled = false;
   private newLinesAdded = 0;
+
   private get diffBlocks() {
-    console.log('vertical/handler.ts VerticalDiffHandler diffBlocks()')
     let blocks = this.editorToVerticalDiffCodeLens.get(this.filepath);
     if (!blocks) {
       blocks = [];
       this.editorToVerticalDiffCodeLens.set(this.filepath, blocks);
     }
-    console.log('Current blocks:', blocks);
     return blocks;
   }
+
   public get range(): vscode.Range {
     const startLine = Math.min(this.startLine, this.endLine);
     const endLine = Math.max(this.startLine, this.endLine);
@@ -45,31 +45,17 @@ export class VerticalDiffHandler implements vscode.Disposable {
     private startLine: number,
     private endLine: number,
     private editor: vscode.TextEditor,
-    private readonly editorToVerticalDiffCodeLens: Map<
-      string,
-      VerticalDiffCodeLens[]
-    >,
-    private readonly clearForFilepath: (
-      filepath: string | undefined,
-      accept: boolean,
-    ) => void,
+    private readonly editorToVerticalDiffCodeLens: Map<string, VerticalDiffCodeLens[]>,
+    private readonly clearForFilepath: (filepath: string | undefined, accept: boolean) => void,
     private readonly refreshCodeLens: () => void,
     public options: VerticalDiffHandlerOptions,
   ) {
     this.currentLineIndex = startLine;
 
-    this.redDecorationManager = new DecorationTypeRangeManager(
-      redDecorationType,
-      this.editor,
-    );
-
-    this.greenDecorationManager = new DecorationTypeRangeManager(
-      greenDecorationType,
-      this.editor,
-    );
+    this.redDecorationManager = new DecorationTypeRangeManager(redDecorationType, this.editor);
+    this.greenDecorationManager = new DecorationTypeRangeManager(greenDecorationType, this.editor);
 
     const disposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
-      // When we switch away and back to this editor, need to re-draw decorations
       if (editor?.document.uri.fsPath === this.filepath) {
         this.editor = editor;
         this.redDecorationManager.applyToNewEditor(editor);
@@ -90,10 +76,10 @@ export class VerticalDiffHandler implements vscode.Disposable {
 
   private deletionBuffer: string[] = [];
   private redDecorationManager: DecorationTypeRangeManager;
-  insertedInCurrentBlock = 0;
+  private greenDecorationManager: DecorationTypeRangeManager;
+  private insertedInCurrentBlock = 0;
 
   private async insertDeletionBuffer() {
-    // Don't remove trailing whitespace line
     const totalDeletedContent = this.deletionBuffer.join("\n");
 
     if (
@@ -110,10 +96,8 @@ export class VerticalDiffHandler implements vscode.Disposable {
         numRed: this.deletionBuffer.length,
         numGreen: this.insertedInCurrentBlock,
       };
-      console.log('vertical/handler.ts insertDeletionBuffer() Adding diff block:', block);
       this.diffBlocks.push(block);
       this.editorToVerticalDiffCodeLens.set(this.filepath, this.diffBlocks);
-      console.log('Map after update:', this.editorToVerticalDiffCodeLens);
     }
 
     if (this.deletionBuffer.length === 0) {
@@ -153,10 +137,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.updateIndexLineDecorations();
   }
 
-  private greenDecorationManager: DecorationTypeRangeManager;
-
   private async insertTextAboveLine(index: number, text: string) {
-    console.log('vertical/handler.ts insertTextAboveLine(): ', index, text)
     await this.editor.edit(
       (editBuilder) => {
         const lineCount = this.editor.document.lineCount;
@@ -187,7 +168,6 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   private async deleteLinesAt(index: number, numLines = 1) {
-    console.log('vertical/handler.ts deleteLinesAt(): ', index, numLines)
     const startLine = new vscode.Position(index, 0);
     await this.editor.edit(
       (editBuilder) => {
@@ -204,22 +184,17 @@ export class VerticalDiffHandler implements vscode.Disposable {
 
   private updateIndexLineDecorations() {
     if (this.options.instant) {
-      // We don't show progress on instant apply
+      // No progress highlighting in instant mode
       return;
     }
 
-    // Highlight the line at the currentLineIndex
-    // And lightly highlight all lines between that and endLine
     if (this.currentLineIndex - this.newLinesAdded >= this.endLine) {
       this.editor.setDecorations(indexDecorationType, []);
       this.editor.setDecorations(belowIndexDecorationType, []);
     } else {
       const start = new vscode.Position(this.currentLineIndex, 0);
       this.editor.setDecorations(indexDecorationType, [
-        new vscode.Range(
-          start,
-          new vscode.Position(start.line, Number.MAX_SAFE_INTEGER),
-        ),
+        new vscode.Range(start, new vscode.Position(start.line, Number.MAX_SAFE_INTEGER)),
       ]);
       const end = new vscode.Position(this.endLine, 0);
       this.editor.setDecorations(belowIndexDecorationType, [
@@ -233,29 +208,8 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.editor.setDecorations(indexDecorationType, []);
   }
 
-  public getLineDeltaBeforeLine(line: number) {
-    // Returns the number of lines removed from a file when the diff currently active is closed
-    let totalLineDelta = 0;
-    for (const range of this.greenDecorationManager
-      .getRanges()
-      .sort((a, b) => a.start.line - b.start.line)) {
-      if (range.start.line > line) {
-        break;
-      }
-
-      totalLineDelta -= range.end.line - range.start.line + 1;
-    }
-
-    return totalLineDelta;
-  }
-
   async clear(accept: boolean) {
-    console.log('vertical/handler.ts clear(): ', accept)
-    vscode.commands.executeCommand(
-      "setContext",
-      "continue.streamingDiff",
-      false,
-    );
+    vscode.commands.executeCommand("setContext", "continue.streamingDiff", false);
     const rangesToDelete = accept
       ? this.redDecorationManager.getRanges()
       : this.greenDecorationManager.getRanges();
@@ -265,7 +219,6 @@ export class VerticalDiffHandler implements vscode.Disposable {
     this.clearIndexLineDecorations();
 
     this.editorToVerticalDiffCodeLens.delete(this.filepath);
-    console.log('calling this.editor.edit')
     await this.editor.edit(
       (editBuilder) => {
         for (const range of rangesToDelete) {
@@ -308,6 +261,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
       this._diffLinesQueue.push(diffLine);
     }
 
+    // Only process if no lock and editor is active
     if (this._queueLock || this.editor !== vscode.window.activeTextEditor) {
       return;
     }
@@ -323,8 +277,8 @@ export class VerticalDiffHandler implements vscode.Disposable {
       try {
         await this._handleDiffLine(line);
       } catch (e) {
-        // If editor is switched between calling _handleDiffLine and the edit actually being executed
-        this._diffLinesQueue.push(line);
+        // If editor is switched or an error occurs, re-queue and break
+        this._diffLinesQueue.unshift(line);
         break;
       }
     }
@@ -335,26 +289,39 @@ export class VerticalDiffHandler implements vscode.Disposable {
   private async _handleDiffLine(diffLine: DiffLine) {
     switch (diffLine.type) {
       case "same":
+        // For a "same" line:
+        // 1. Finalize any pending inserted/deleted buffers.
+        // 2. Move to the next line.
         await this.insertDeletionBuffer();
         this.incrementCurrentLineIndex();
         break;
+  
       case "old":
-        // Add to deletion buffer and delete the line for now
+        // For an "old" line:
+        // 1. Add this line to the deletion buffer.
+        // 2. Delete the line at the current index.
+        // **Do not increment currentLineIndex**, because after deletion all lines below shift up,
+        // meaning what was previously currentLineIndex+1 is now at currentLineIndex.
         this.deletionBuffer.push(diffLine.line);
         await this.deleteLinesAt(this.currentLineIndex);
+        // NO incrementCurrentLineIndex() here.
         break;
+  
       case "new":
+        // For a "new" line:
+        // 1. Insert the new line above the current index, pushing existing lines down.
+        // 2. Increment currentLineIndex to move past the newly inserted line.
         await this.insertLineAboveIndex(this.currentLineIndex, diffLine.line);
         this.incrementCurrentLineIndex();
         this.insertedInCurrentBlock++;
         break;
     }
-  }
+  }  
 
   async run(diffLineGenerator: AsyncGenerator<DiffLine>) {
-    let diffLines = [];
+    let diffLines: DiffLine[] = [];
     try {
-      // As an indicator of loading
+      // Show loading indicator on current line
       this.updateIndexLineDecorations();
 
       for await (const diffLine of diffLineGenerator) {
@@ -365,21 +332,12 @@ export class VerticalDiffHandler implements vscode.Disposable {
         await this.queueDiffLine(diffLine);
       }
 
-      // Clear deletion buffer
+      // Flush any pending deletion buffer
       await this.insertDeletionBuffer();
       this.clearIndexLineDecorations();
-
       this.refreshCodeLens();
-
       this.options.onStatusUpdate("done", this.diffBlocks.length);
 
-      // Reject on user typing
-      // const listener = vscode.workspace.onDidChangeTextDocument((e) => {
-      //   if (e.document.uri.fsPath === this.filepath) {
-      //     this.clear(false);
-      //     listener.dispose();
-      //   }
-      // });
     } catch (e) {
       this.clearForFilepath(this.filepath, false);
       throw e;
@@ -393,8 +351,7 @@ export class VerticalDiffHandler implements vscode.Disposable {
     numGreen: number,
     numRed: number,
   ) {
-    console.log('vertical/handler.ts acceptRejectBlock()', accept, startLine, numGreen, numRed)
-    // Delete the editor decorations first (these don't affect undo history)
+    // Remove decorations first
     if (numGreen > 0) {
       this.greenDecorationManager.deleteRangeStartingAt(startLine + numRed);
     }
@@ -402,33 +359,31 @@ export class VerticalDiffHandler implements vscode.Disposable {
       this.redDecorationManager.deleteRangeStartingAt(startLine);
     }
 
-    // Combine all edits into a single operation
+    // Apply edits in a single operation
     await this.editor.edit(
       (editBuilder) => {
-        console.log('making edits...')
-        if (accept) {
-          // If accepting, delete the red (old) lines
-          if (numRed > 0) {
-            editBuilder.delete(new vscode.Range(
+        if (accept && numRed > 0) {
+          // Accept: remove old (red) lines
+          editBuilder.delete(
+            new vscode.Range(
               new vscode.Position(startLine, 0),
-              new vscode.Position(startLine + numRed, 0)
-            ));
-          }
-        } else {
-          // If rejecting, delete the green (new) lines
-          if (numGreen > 0) {
-            // include the line ending of the last line
-            const document = this.editor.document;
-            const endLine = startLine + numRed + numGreen;
-            const endPosition = endLine < document.lineCount ? 
-              new vscode.Position(endLine, 0) :
-              new vscode.Position(endLine - 1, document.lineAt(endLine - 1).text.length);
-
-            editBuilder.delete(new vscode.Range(
               new vscode.Position(startLine + numRed, 0),
-              endPosition
-            ));
-          }
+            ),
+          );
+        } else if (!accept && numGreen > 0) {
+          // Reject: remove new (green) lines
+          const document = this.editor.document;
+          const endLine = startLine + numRed + numGreen;
+          const endPosition = endLine < document.lineCount
+            ? new vscode.Position(endLine, 0)
+            : new vscode.Position(endLine - 1, document.lineAt(endLine - 1).text.length);
+
+          editBuilder.delete(
+            new vscode.Range(
+              new vscode.Position(startLine + numRed, 0),
+              endPosition,
+            ),
+          );
         }
       },
       {
@@ -437,12 +392,10 @@ export class VerticalDiffHandler implements vscode.Disposable {
       }
     );
 
-    // Shift everything below upward
+    // Shift decorations and code lenses accordingly
     const offset = -(accept ? numRed : numGreen);
     this.redDecorationManager.shiftDownAfterLine(startLine, offset);
     this.greenDecorationManager.shiftDownAfterLine(startLine, offset);
-
-    // Update codelens
     this.shiftCodeLensObjects(startLine, offset);
 
     const status = this.diffBlocks.length === 0 ? "closed" : undefined;
@@ -450,7 +403,6 @@ export class VerticalDiffHandler implements vscode.Disposable {
   }
 
   private shiftCodeLensObjects(startLine: number, offset: number) {
-    // Shift the codelens objects
     const blocks =
       this.editorToVerticalDiffCodeLens
         .get(this.filepath)
@@ -462,7 +414,6 @@ export class VerticalDiffHandler implements vscode.Disposable {
           return x;
         }) || [];
     this.editorToVerticalDiffCodeLens.set(this.filepath, blocks);
-
     this.refreshCodeLens();
   }
 
@@ -471,17 +422,14 @@ export class VerticalDiffHandler implements vscode.Disposable {
     startLine: number,
     lineDelta: number,
   ) {
-    // Retrieve the diff blocks for the given file
     const blocks = this.editorToVerticalDiffCodeLens.get(filepath);
-    if (!blocks) {
-      return;
-    }
+    if (!blocks) return;
 
-    //update decorations
+    // Update decorations
     this.redDecorationManager.shiftDownAfterLine(startLine, lineDelta);
     this.greenDecorationManager.shiftDownAfterLine(startLine, lineDelta);
 
-    //update code lens
+    // Update code lenses
     this.shiftCodeLensObjects(startLine, lineDelta);
   }
 

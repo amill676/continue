@@ -108,6 +108,8 @@ export async function deterministicApplyLazyEdit(
   newLazyFile: string,
   filename: string,
 ): Promise<DiffLine[] | undefined> {
+  // NOTE: tree-sitter-wasms apparently doesn't support .sql files
+  // the next line emits noise logs as a result
   const parser = await getParserForFile(filename);
   if (!parser) {
     // XXX Added this since sql doesn't have a parser
