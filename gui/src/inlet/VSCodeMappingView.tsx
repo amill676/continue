@@ -1,4 +1,4 @@
-import { MantineReactInnerTargetTable, TableDataPreview, GlobalTableStyles } from "@inlet/web/main/NewMappingView"
+import { MantineReactInnerTargetTable, TableDataPreview, DataPreview, GlobalTableStyles } from "@inlet/web/main/NewMappingView"
 import { attach } from "@inlet/web/common/ReactStore"
 import store, { WorkflowEditStore, _traverseTargetFields } from "@inlet/web/main/WorkflowEditStore"
 import IDEDelegate from "./IDEDelegate"
@@ -101,9 +101,50 @@ const TableWrapper = attach(
     handleClickPreviewMapping: handleClickPreviewMapping,
     onClickAcceptMapping: handleClickAcceptMapping,
     onClickRejectMapping: handleClickRejectMapping,
+    handleGetFieldSummary: store.handleGetFieldSummary.bind(store),
+    isTargetFieldSummaryLoading: store.isTargetFieldSummaryLoading.bind(store),
     onSuggestionHover: store.handleSuggestionHover.bind(store),
     setFieldValue: store.handleChangeOutputFieldMapping.bind(store),
     saveFieldMappingState: store.saveFieldMappingState.bind(store),
+  }
+)
+
+
+export const FieldSummaryPreview = attach(
+  store,
+  function InnerFieldSummaryPreview(props) {
+    if (!props.targetPreviewData) {
+      // hide if <TableDataPreview/> component is not being shown
+      console.log('InnerFieldSummaryPreview() targetPreviewData is null, hiding')
+      return null
+    }
+    let fieldSummary = props.targetFieldSummaries[props.hoveringOnFieldId]?.[props.hoveringOnPath]
+    if (!fieldSummary) {
+      // hide if summary for this field does not exist yet
+      console.log('InnerFieldSummaryPreview() field summary does not exist yet, hiding')
+      return null
+    }
+    return (
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 320,
+        width: 300,
+        backgroundColor: 'white',
+        zIndex: 100,
+        padding: 10,
+        border: '1px solid #ccc',
+        height: '100%',
+      }}>
+        <DataPreview data={fieldSummary} autoExpand={true}/>
+      </div>
+    )
+  },
+  {
+    targetPreviewData: 'targetPreviewData',
+    targetFieldSummaries: 'targetFieldSummaries',
+    hoveringOnFieldId: 'hoveringOnFieldId',
+    hoveringOnPath: 'hoveringOnPath',
   }
 )
 
@@ -113,6 +154,7 @@ function TargetTable(props) {
     <div style={{position: 'relative', overflow: 'auto'}}>
       <TableWrapper/>
       <TableDataPreview/>
+      <FieldSummaryPreview/>
       <GlobalTableStyles/>
     </div>
   )
