@@ -13,10 +13,16 @@ store.setIDE(ideDelegate)
 
 
 // Listen for messages from the extension
-window.addEventListener('message', event => {
+window.addEventListener('message', async event => {
   const message = event.data;
   switch (message.command) {
     case 'refreshMapping':
+      console.log('WINDOW LEVEL store.state: ', store.state)
+      if (store.state.fieldMappingState == null) {
+        // refresh the workflow
+        console.log('WINDOW LEVEL refreshing workflow')
+        await store.loadWorkflow(store.state.workflowId);
+      }
       console.log("REFRESHING MAPPING")
       // Update the UI with the new data
       store.refreshMapping();

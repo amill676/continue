@@ -367,23 +367,23 @@ export class VerticalDiffHandler implements vscode.Disposable {
           editBuilder.delete(
             new vscode.Range(
               new vscode.Position(startLine, 0),
-              new vscode.Position(startLine + numRed, 0),
-            ),
-          );
-        } else if (!accept && numGreen > 0) {
-          // Reject: remove new (green) lines
-          const document = this.editor.document;
-          const endLine = startLine + numRed + numGreen;
-          const endPosition = endLine < document.lineCount
-            ? new vscode.Position(endLine, 0)
-            : new vscode.Position(endLine - 1, document.lineAt(endLine - 1).text.length);
+              new vscode.Position(startLine + numRed, 0)
+            ));
+        } else {
+          // If rejecting, delete the green (new) lines
+          if (numGreen > 0) {
+            // include the line ending of the last line
+            const document = this.editor.document;
+            const endLine = startLine + numRed + numGreen;
+            const endPosition = endLine < document.lineCount ? 
+              new vscode.Position(endLine, 0) :
+              new vscode.Position(endLine - 1, document.lineAt(endLine - 1).text.length);
 
-          editBuilder.delete(
-            new vscode.Range(
+            editBuilder.delete(new vscode.Range(
               new vscode.Position(startLine + numRed, 0),
-              endPosition,
-            ),
-          );
+              endPosition
+            ));
+          }
         }
       },
       {
