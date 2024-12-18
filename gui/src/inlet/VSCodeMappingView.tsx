@@ -102,7 +102,7 @@ const TableWrapper = attach(
     onClickAcceptMapping: handleClickAcceptMapping,
     onClickRejectMapping: handleClickRejectMapping,
     handleGetFieldSummary: store.handleGetFieldSummary.bind(store),
-    isTargetFieldSummaryLoading: store.isTargetFieldSummaryLoading.bind(store),
+    isSourceFieldSummaryLoading: store.isSourceFieldSummaryLoading.bind(store),
     onSuggestionHover: store.handleSuggestionHover.bind(store),
     setFieldValue: store.handleChangeOutputFieldMapping.bind(store),
     saveFieldMappingState: store.saveFieldMappingState.bind(store),
@@ -118,10 +118,7 @@ export const FieldSummaryPreview = attach(
       console.log('InnerFieldSummaryPreview() targetPreviewData is null, hiding')
       return null
     }
-    let fieldSummary = props.targetFieldSummaries[props.hoveringOnFieldId]?.[props.hoveringOnPath]
-    if (!fieldSummary) {
-      // hide if summary for this field does not exist yet
-      console.log('InnerFieldSummaryPreview() field summary does not exist yet, hiding')
+    if (!props.sourceFieldSummary) {
       return null
     }
     return (
@@ -136,15 +133,13 @@ export const FieldSummaryPreview = attach(
         border: '1px solid #ccc',
         height: '100%',
       }}>
-        <DataPreview data={fieldSummary} autoExpand={true}/>
+        <DataPreview data={props.sourceFieldSummary} autoExpand={true}/>
       </div>
     )
   },
   {
     targetPreviewData: 'targetPreviewData',
-    targetFieldSummaries: 'targetFieldSummaries',
-    hoveringOnFieldId: 'hoveringOnFieldId',
-    hoveringOnPath: 'hoveringOnPath',
+    sourceFieldSummary: 'sourceFieldSummary',
   }
 )
 
