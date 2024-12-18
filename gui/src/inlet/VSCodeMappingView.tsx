@@ -149,7 +149,6 @@ function TargetTable(props) {
     <div style={{position: 'relative', overflow: 'auto'}}>
       <TableWrapper/>
       <TableDataPreview/>
-      <FieldSummaryPreview/>
       <GlobalTableStyles/>
     </div>
   )
