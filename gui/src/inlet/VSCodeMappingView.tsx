@@ -110,40 +110,6 @@ const TableWrapper = attach(
 )
 
 
-export const FieldSummaryPreview = attach(
-  store,
-  function InnerFieldSummaryPreview(props) {
-    if (!props.targetPreviewData) {
-      // hide if <TableDataPreview/> component is not being shown
-      console.log('InnerFieldSummaryPreview() targetPreviewData is null, hiding')
-      return null
-    }
-    if (!props.sourceFieldSummary) {
-      return null
-    }
-    return (
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        right: 320,
-        width: 300,
-        backgroundColor: 'white',
-        zIndex: 100,
-        padding: 10,
-        border: '1px solid #ccc',
-        height: '100%',
-      }}>
-        <DataPreview data={props.sourceFieldSummary} autoExpand={true}/>
-      </div>
-    )
-  },
-  {
-    targetPreviewData: 'targetPreviewData',
-    sourceFieldSummary: 'sourceFieldSummary',
-  }
-)
-
-
 function TargetTable(props) {
   return (
     <div style={{position: 'relative', overflow: 'auto'}}>
@@ -153,7 +119,6 @@ function TargetTable(props) {
     </div>
   )
 }
-
 
 
 function MappingPanel() {
