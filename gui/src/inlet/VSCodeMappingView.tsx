@@ -1,4 +1,4 @@
-import { MantineReactInnerTargetTable, TableDataPreview, DataPreview, GlobalTableStyles } from "@inlet/web/main/NewMappingView"
+import { MantineReactInnerTargetTable, TableDataPreview, GlobalTableStyles } from "@inlet/web/main/NewMappingView"
 import { attach } from "@inlet/web/common/ReactStore"
 import store, { WorkflowEditStore, _traverseTargetFields } from "@inlet/web/main/WorkflowEditStore"
 import IDEDelegate from "./IDEDelegate"
@@ -108,6 +108,7 @@ const TableWrapper = attach(
     onSuggestionHover: store.handleSuggestionHover.bind(store),
     setFieldValue: store.handleChangeOutputFieldMapping.bind(store),
     saveFieldMappingState: store.saveFieldMappingState.bind(store),
+    onSourceFieldSummaryIconHovered: store.handleSourceFieldSummaryIconHovered.bind(store),
   }
 )
 
